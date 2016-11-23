@@ -266,17 +266,17 @@ Qed.
 (**
 
       ------------------------------ (hoare_heap_write)
-      {{Q [X |-> a]}} X **= a {{Q}}
+      {{Q [* x |-> a2]}} [*x] ::= a2 {{Q}}
  *)
 
-Definition heap_sub a1 a2 P : Assertion :=
+Definition heap_sub x a P : Assertion :=
   fun (h : heap) (v : valuation) =>
-    P (t_update h (Id (aeval h v a1)) (aeval h v a2)) v.
+    P (t_update h x (aeval h v a)) v.
 
-Notation "P [ '[' a1 ']' |-> a2 ]" := (heap_sub a1 a2 P) (at level 10).
+Notation "P '[*' x |-> a ]" := (heap_sub x a P) (at level 10).
 
-Theorem hoare_heap_write : forall Q a1 a2,
-  {{Q [ [a1] |-> a2]}} (a1 **= a2) {{Q}}.
+Theorem hoare_heap_write : forall Q x a,
+  {{Q [* x |-> a]}} ([*x] ::= a) {{Q}}.
 Proof.
   unfold hoare_triple.
   intros.
@@ -284,46 +284,45 @@ Proof.
   unfold heap_sub in H0. apply H0.  Qed.
 
 
-
 (* ################################################################# *)
-(** * Summary *)
+(** ** Example Programs *)
 
-(** The rules of Hoare Logic are:
-
-             ------------------------------ (hoare_asgn)
-             {{Q [X |-> a]}} X::=a {{Q}}
-
-             --------------------  (hoare_skip)
-             {{ P }} SKIP {{ P }}
-
-               {{ P }} c1 {{ Q }}
-               {{ Q }} c2 {{ R }}
-              ---------------------  (hoare_seq)
-              {{ P }} c1;;c2 {{ R }}
-
-              {{P /\  b}} c1 {{Q}}
-              {{P /\ ~b}} c2 {{Q}}
-      ------------------------------------  (hoare_if)
-      {{P}} IFB b THEN c1 ELSE c2 FI {{Q}}
-
-               {{P /\ b}} c {{P}}
-        -----------------------------------  (hoare_while)
-        {{P}} WHILE b DO c END {{P /\ ~b}}
-
-                {{P'}} c {{Q'}}
-                   P ->> P'
-                   Q' ->> Q
-         -----------------------------   (hoare_consequence)
-                {{P}} c {{Q}}
-
-
-             ------------------------------ (hoare_heap_write)
-             {{Q [X |-> a]}} X**=a {{Q}}
-
-
+(**
+      {{P}}
+       swap
+      {{P'}}
  *)
 
-(* ################################################################# *)
+Module swap_proof.
+
+
+  Definition J : aexp := ANum 0.
+  Definition K : aexp := ANum 1.
+  Definition temp : aexp := ANum 2.
+
+  Definition Jid : id := Id 0.
+  Definition Kid : id := Id 1.
+  Definition tempid : id := Id 2.
+  
+  Definition swap : com :=
+    temp **= ARead J;;
+    J **= ARead K;; 
+    K **= ARead temp.
+         
+  Theorem swap_ok : 
+    {{ fun h v => (h Jid = 5) /\ (h Kid = 7)  }}
+      swap
+    {{ fun h v => (h Jid = 7) /\ (h Kid = 5) }}.
+  Proof.
+    unfold swap.
+    eapply hoare_seq.
+    - eapply hoare_seq. apply hoare_heap_write. apply hoare_heap_write.
+    - apply hoare_heap_write.
+
+  
+
+End swap_proof.
+  
 (** [] *)
 
 (** $Date: 2016-07-13 12:41:41 -0400 (Wed, 13 Jul 2016) $ *)
