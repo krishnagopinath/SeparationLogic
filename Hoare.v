@@ -276,7 +276,7 @@ Definition heap_sub x a P : Assertion :=
 Notation "P '[*' x |-> a ]" := (heap_sub x a P) (at level 10).
 
 Theorem hoare_heap_write : forall Q x a,
-  {{Q [* x |-> a]}} ([*x] ::= a) {{Q}}.
+  {{Q [*x |-> a]}} ([*x] ::= a) {{Q}}.
 Proof.
   unfold hoare_triple.
   intros.
@@ -295,31 +295,32 @@ Proof.
 
 Module swap_proof.
 
-
-  Definition J : aexp := ANum 0.
-  Definition K : aexp := ANum 1.
-  Definition temp : aexp := ANum 2.
-
-  Definition Jid : id := Id 0.
-  Definition Kid : id := Id 1.
-  Definition tempid : id := Id 2.
+  Definition J : id := Id 0.
+  Definition K : id := Id 1.
+  Definition temp : id := Id 2.
   
   Definition swap : com :=
-    temp **= ARead J;;
-    J **= ARead K;; 
-    K **= ARead temp.
+    [*temp] ::= ARead J;;
+    [*J] ::= ARead K;; 
+    [*K] ::= ARead temp.
          
   Theorem swap_ok : 
-    {{ fun h v => (h Jid = 5) /\ (h Kid = 7)  }}
+    {{ fun h v => (h J = 5) /\ (h K = 7) }}
       swap
-    {{ fun h v => (h Jid = 7) /\ (h Kid = 5) }}.
+    {{ fun h v => (h J = 7) /\ (h K = 5) }}.
   Proof.
     unfold swap.
     eapply hoare_seq.
-    - eapply hoare_seq. apply hoare_heap_write. apply hoare_heap_write.
-    - apply hoare_heap_write.
-
-  
+    - eapply hoare_seq.
+       * apply hoare_heap_write.
+       * apply hoare_heap_write.
+    - eapply hoare_consequence_pre.
+      * apply hoare_heap_write.
+      * unfold heap_sub, t_update, assert_implies. intros.
+        simpl. destruct H. split.
+        apply H0.
+        apply H.
+   Qed.  
 
 End swap_proof.
   
