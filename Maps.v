@@ -273,6 +273,32 @@ Definition update {A:Type} (m : partial_map A)
                   (x : id) (v : A) :=
   t_update m x (Some v).
 
+Definition remove {A:Type} (m : partial_map A) (key : id) : partial_map A :=
+  fun key' => if beq_id key key' then None else m key'.
+  
+
+(** We can now lift all of the basic lemmas about total maps to
+    partial maps.  *)
+
+Definition example_pmap : partial_map nat := (update
+                                                (update
+                                                   (update
+                                                      ((update empty)
+                                                         (Id 0) 10)
+                                                      (Id 1) 12)
+                                                   (Id 2) 15)
+                                                (Id 3) 18).
+
+
+Example rm_ex_1 : (remove example_pmap (Id 1)) (Id 0) = Some 10.
+Proof.
+  reflexivity. Qed.
+
+Example rm_ex_2 : (remove example_pmap (Id 1)) (Id 1) = None.
+Proof.
+  reflexivity. Qed.
+
+
 (** We can now lift all of the basic lemmas about total maps to
     partial maps.  *)
 
