@@ -1,3 +1,11 @@
+
+(* TODO Some notational sugar for the map types (I mean, just look at the last proof) *)
+(* TODO Some notational sugar for id_add, CFree - looks ugly in programs *)
+(* TODO For now, hid is just syntactic sugar over id, must find a better way to do this  *)
+(* TODO removing strip_to_nat leads to changing the entire Math operation libraries. Must think of another way to do this *)
+(* TODO Find a way to represent heap and valuation as one st object - Its getting tedious*)
+
+
 (** * Imp: Simple Imperative Programs *)
 
 Require Import Coq.Bool.Bool.
@@ -131,7 +139,6 @@ Fixpoint deallocate (h: heap) (a : hid) (n : nat) : heap :=
   | S n' => deallocate (remove h a) (id_add a 1) n'
   end.
 
-Print Grammar constr.
 Inductive ceval : heap -> valuation -> com -> heap -> valuation -> Prop :=
   | E_Skip : forall (h : heap) (v : valuation),
       ceval h v SKIP h v
@@ -166,6 +173,10 @@ Inductive ceval : heap -> valuation -> com -> heap -> valuation -> Prop :=
   | E_Write : forall (h : heap) (v : valuation) (x : id) ( a1 : aexp) (n : nat),
       aeval h v a1 = n ->
       ceval h v ( [*x] ::= a1) (update h x n) v.
+
+
+(* ################################################################# *)
+(** * Examples *)
 
 
 Example ex_cwrite :  ceval empty_heap empty_valuation
@@ -244,6 +255,9 @@ Proof.
     + simpl. apply E_Write. reflexivity.
 Qed.
 
+
+(* Allocate two items to the heap, then free one address location *)
+
 Definition alloc_2_free_1 : com :=
   P ::= Alloc 2;;
   CFree P 1.
@@ -264,11 +278,6 @@ Qed.
 
 (* $Date: 2016-07-18 $ *)
 
-(* TODO Some notational sugar for the map types (I mean, just look at the last proof) *)
-(* TODO Some notational sugar for id_add, CFree - looks ugly in programs *)
-(* TODO For now, hid is just syntactic sugar over id, must find a better way to do this  *)
-(* TODO removing strip_to_nat leads to changing the entire Math operation libraries. Must think of another way to do this *)
-(* TODO Find a way to represent heap and valuation as one st object - Its getting tedious*)
 
 
 
