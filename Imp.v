@@ -1,4 +1,3 @@
-
 (* TODO Some notational sugar for the map types (I mean, just look at the last proof) *)
 (* TODO Some notational sugar for id_add, CFree - looks ugly in programs *)
 (* TODO For now, hid is just syntactic sugar over id, must find a better way to do this  *)
@@ -126,10 +125,10 @@ Notation "a '::=' 'Alloc' n" :=
 (** * Evaluation *)
 
 (* A helper that adds 'n' extra zeroes to a heap *)
-Fixpoint add_zeroes (h : heap) (a : hid) (n : nat) : heap :=
+Fixpoint allocate (h : heap) (a : hid) (n : nat) : heap :=
   match n with
   | 0 => h
-  | S n' => add_zeroes (update h (id_add a n') 0) a n'
+  | S n' => update (allocate h a n') (id_add a n') 0
   end.
 
 (* A helper fn that removes items from the heap *)
@@ -167,7 +166,7 @@ Inductive ceval : heap -> valuation -> com -> heap -> valuation -> Prop :=
       ceval h v (x ::= a1) h (t_update v x n)
   | E_Allocate : forall (h : heap) (v : valuation) (a : hid)  (n : nat),
       (forall (i : nat),  i < n -> h (id_add a i) = None) ->
-      ceval h v ( a ::= Alloc n) (add_zeroes h a n)  v
+      ceval h v ( a ::= Alloc n) (allocate h a n)  v
   | E_Free : forall (h : heap) (v : valuation) (a : hid) (n : nat),
       ceval h v (CFree a n)  (deallocate h a n) v
   | E_Write : forall (h : heap) (v : valuation) (x : id) ( a1 : aexp) (n : nat),
@@ -246,7 +245,7 @@ Definition alloc_2 : com :=
 Theorem alloc_2_ceval :
   ceval empty_heap empty_valuation
         alloc_2
-        (update (update (update (update empty_heap (id_add P 1) 0) P 0) P 10) (id_add P 1) 15) empty_valuation. 
+        (update (update (allocate empty_heap P 2) P 10) (id_add P 1) 15) empty_valuation. 
 Proof.
   eapply E_Seq. apply E_Allocate.
   - intros. simpl. reflexivity.
@@ -265,7 +264,7 @@ Definition alloc_2_free_1 : com :=
 Theorem alloc_2_free_1_ceval :
   ceval empty_heap empty_valuation
         alloc_2_free_1
-        (deallocate (update (update empty_heap (id_add P 1) 0) P 0) P 1)  empty_valuation.
+        (deallocate (allocate empty_heap P 2) P 1)  empty_valuation.
 Proof.
   eapply E_Seq.
   - apply E_Allocate. simpl. reflexivity.
