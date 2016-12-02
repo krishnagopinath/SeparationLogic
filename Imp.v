@@ -11,17 +11,29 @@ Require Import Maps.
 (* ################################################################# *)
 (** * Arithmetic and Boolean Expressions *)
 
-(* Renamed state to valuation for notational convenience *)
 Definition valuation := total_map nat.
-Definition heap := total_map nat.
+Definition heap := partial_map nat.
 
 Definition empty_valuation : valuation :=
   t_empty 0.
 
 Definition empty_heap : heap :=
-  t_empty 0.
+  empty.
+
+Definition hid : Type := id.
+
+
+
+Definition strip_option_nat (s : option nat) : nat :=
+  match s with
+  | Some x => x
+  | None => 0
+  end.
+
+Notation "h ?* k" := (strip_option_nat (h k)) (at level 80).
 
 Check t_empty.
+Check id_add.
 
 Inductive aexp : Type :=
   | ANum : nat -> aexp
@@ -29,7 +41,7 @@ Inductive aexp : Type :=
   | AMinus : aexp -> aexp -> aexp
   | AMult : aexp -> aexp -> aexp
   | AVar :  id -> aexp 
-  | ARead : id -> aexp.
+  | ARead : hid -> aexp.
 
 Definition A : id := Id 0.
 Definition B : id := Id 1.
@@ -44,20 +56,14 @@ Inductive bexp : Type :=
   | BAnd : bexp -> bexp -> bexp.
 
 (** ** Evaluation  *)
-
-(* Renamed st to v for notational convenience *)
 Fixpoint aeval (h : heap) (v : valuation) (a : aexp) : nat :=
   match a with
   | ANum x => x                               
   | APlus a1 a2 => (aeval h v a1) + (aeval h v a2)
   | AMinus a1 a2  => (aeval h v a1) - (aeval h v a2)
   | AMult a1 a2 => (aeval h v a1) * (aeval h v a2)
-  (** 
-   As of now, the below constructors 
-   just perform lookup on different structures 
-  *)                               
   | AVar x => v x
-  | ARead x => h x 
+  | ARead x => h ?* x 
   end.
 
 Fixpoint beval (h : heap) (v : valuation) (b : bexp) : bool :=
@@ -73,6 +79,9 @@ Fixpoint beval (h : heap) (v : valuation) (b : bexp) : bool :=
 Compute  aeval empty_heap (t_update empty_valuation A 5)
         (APlus (ANum 3) (AMult (AVar A) (ANum 2))).
 
+Compute aeval (update empty_heap A 5) empty_valuation
+        (APlus (ANum 3) (ARead A)).
+
 
 (* ################################################################# *)
 (** * Commands *)
@@ -84,7 +93,10 @@ Inductive com : Type :=
   | CIf : bexp -> com -> com -> com
   | CWhile : bexp -> com -> com
   | CVar : id -> aexp -> com
-  | CWrite : id -> aexp -> com.
+  | CWrite : hid -> aexp -> com
+  | CAllocate : hid -> nat -> com
+  | CFree : hid -> nat -> com.
+
 
 Notation "'SKIP'" :=
   CSkip.
@@ -98,10 +110,28 @@ Notation "'[*' x ']'  '::=' a" :=
   (CWrite x a) (at level 60).
 Notation "x '::=' a" :=
   (CVar x a) (at level 60).
+Notation "a '::=' 'Alloc' n" :=
+  (CAllocate a n) (at level 60).
+
 
 (* ################################################################# *)
 (** * Evaluation *)
 
+(* A helper that adds 'n' extra zeroes to a heap *)
+Fixpoint add_zeroes (h : heap) (a : hid) (n : nat) : heap :=
+  match n with
+  | 0 => h
+  | S n' => add_zeroes (update h (id_add a n') 0) a n'
+  end.
+
+(* A helper fn that removes items from the heap *)
+Fixpoint deallocate (h: heap) (a : hid) (n : nat) : heap :=
+  match n with
+  | 0 => h
+  | S n' => deallocate (remove h a) (id_add a 1) n'
+  end.
+
+Print Grammar constr.
 Inductive ceval : heap -> valuation -> com -> heap -> valuation -> Prop :=
   | E_Skip : forall (h : heap) (v : valuation),
       ceval h v SKIP h v
@@ -128,16 +158,19 @@ Inductive ceval : heap -> valuation -> com -> heap -> valuation -> Prop :=
   | E_Var  : forall (h : heap) (v : valuation) (a1 : aexp) (n : nat) (x : id),
       aeval h v a1 = n ->
       ceval h v (x ::= a1) h (t_update v x n)
+  | E_Allocate : forall (h : heap) (v : valuation) (a : hid)  (n : nat),
+      (forall (i : nat),  i < n -> h (id_add a i) = None) ->
+      ceval h v ( a ::= Alloc n) (add_zeroes h a n)  v
+  | E_Free : forall (h : heap) (v : valuation) (a : hid) (n : nat),
+      ceval h v (CFree a n)  (deallocate h a n) v
   | E_Write : forall (h : heap) (v : valuation) (x : id) ( a1 : aexp) (n : nat),
       aeval h v a1 = n ->
-      ceval h v ( [*x] ::= a1) (t_update h x n) v.
-
-
+      ceval h v ( [*x] ::= a1) (update h x n) v.
 
 
 Example ex_cwrite :  ceval empty_heap empty_valuation
                            ( [*A] ::= (APlus (ANum 3) (ANum 12)))
-                           (t_update empty_heap A 15) empty_valuation.
+                           (update empty_heap A 15) empty_valuation.
 Proof.
   simpl. apply E_Write; auto. Qed.
 
@@ -149,9 +182,9 @@ Example ex_complex :
        THEN [*B] ::= ANum 3
        ELSE [*C] ::= ANum 4
      FI)     
-     (t_update (t_update empty_heap A 2) B 3) empty_valuation.
+     (update (update empty_heap A 2) B 3) empty_valuation.
 Proof.
-  apply E_Seq with (t_update empty_heap A 2) empty_valuation.
+  apply E_Seq with (update empty_heap A 2) empty_valuation.
   - constructor; auto.
   - repeat constructor; auto.
 Qed.
@@ -171,23 +204,59 @@ Definition pup_to_n : com :=
 
 (* Proof that this program executes as intended for [X] = [2] *)
 Theorem pup_to_2_ceval :
-  ceval (t_update empty_heap A 2) empty_valuation
+  ceval (update empty_heap A 2) empty_valuation
   pup_to_n  
-  (t_update (t_update (t_update (t_update (t_update (t_update empty_heap A 2) B 0) B 2) A 1) B 3) A 0) empty_valuation.
+  (update (update (update (update (update (update empty_heap A 2) B 0) B 2) A 1) B 3) A 0) empty_valuation.
 Proof.
-  apply E_Seq with (h2 := (t_update (t_update empty_heap A 2) B 0) ) (v2 := empty_valuation).
+  apply E_Seq with (h2 := (update (update empty_heap A 2) B 0) ) (v2 := empty_valuation).
   - constructor; auto. 
-  - apply E_WhileLoop  with (h2 := (t_update (t_update (t_update (t_update empty_heap A 2) B 0) B 2) A 1))
+  - apply E_WhileLoop  with (h2 := (update (update (update (update empty_heap A 2) B 0) B 2) A 1))
                            (v2 := empty_valuation).
     + auto.
-    + apply E_Seq with (h2 := (t_update (t_update (t_update empty_heap A 2) B 0) B 2))
+    + apply E_Seq with (h2 := (update (update (update empty_heap A 2) B 0) B 2))
                          (v2 := empty_valuation); apply E_Write; auto; constructor.
-    + apply E_WhileLoop with (h2 :=  (t_update (t_update (t_update (t_update (t_update (t_update empty_heap A 2) B 0) B 2) A 1) B 3) A 0)) (v2 := empty_valuation).
+    + apply E_WhileLoop with (h2 :=  (update (update (update (update (update (update empty_heap A 2) B 0) B 2) A 1) B 3) A 0)) (v2 := empty_valuation).
       * auto.
-      * apply E_Seq with (h2 := (t_update (t_update (t_update (t_update (t_update empty_heap A 2) B 0) B 2) A 1) B 3)) (v2 := empty_valuation);
+      * apply E_Seq with (h2 := (update (update (update (update (update empty_heap A 2) B 0) B 2) A 1) B 3)) (v2 := empty_valuation);
         apply E_Write; auto; constructor.
       * apply E_WhileEnd. auto.
-Qed.       
+Qed.
+
+
+(* Allocate two items to the heap *)
+ 
+Definition P := Id 15. 
+
+Definition alloc_2 : com :=
+  P ::= Alloc 2;;
+  [*P] ::= ANum 10;;
+  [* (id_add P 1)] ::= ANum 15.
+
+Theorem alloc_2_ceval :
+  ceval empty_heap empty_valuation
+        alloc_2
+        (update (update (update (update empty_heap (id_add P 1) 0) P 0) P 10) (id_add P 1) 15) empty_valuation. 
+Proof.
+  eapply E_Seq. apply E_Allocate.
+  - intros. simpl. reflexivity.
+  - eapply E_Seq.
+    + simpl. apply E_Write. reflexivity.
+    + simpl. apply E_Write. reflexivity.
+Qed.
+
+Definition alloc_2_free_1 : com :=
+  P ::= Alloc 2;;
+  CFree P 1.
+
+Theorem alloc_2_free_1_ceval :
+  ceval empty_heap empty_valuation
+        alloc_2_free_1
+        (deallocate (update (update empty_heap (id_add P 1) 0) P 0) P 1)  empty_valuation.
+Proof.
+  eapply E_Seq.
+  - apply E_Allocate. simpl. reflexivity.
+  - simpl. apply E_Free.
+Qed.
 
     
 (** [] *)
@@ -196,6 +265,9 @@ Qed.
 (* $Date: 2016-07-18 $ *)
 
 (* TODO Some notational sugar for the map types (I mean, just look at the last proof) *)
+(* TODO Some notational sugar for id_add, CFree - looks ugly in programs *)
+(* TODO For now, hid is just syntactic sugar over id, must find a better way to do this  *)
+(* TODO removing strip_to_nat leads to changing the entire Math operation libraries. Must think of another way to do this *)
 (* TODO Find a way to represent heap and valuation as one st object - Its getting tedious*)
 
 
