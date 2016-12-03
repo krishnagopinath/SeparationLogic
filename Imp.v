@@ -18,29 +18,25 @@ Require Import Maps.
 (* ################################################################# *)
 (** * Arithmetic and Boolean Expressions *)
 
-Definition valuation := total_map nat.
+Definition valuation := partial_map nat.
 Definition heap := partial_map nat.
 
 Definition empty_valuation : valuation :=
-  t_empty 0.
+  empty.
 
 Definition empty_heap : heap :=
   empty.
 
 Definition hid : Type := id.
 
-
-
-Definition strip_option_nat (s : option nat) : nat :=
-  match s with
-  | Some x => x
+Definition strip_opt_nat (m : partial_map nat) (a : id)  : nat :=
+  match (lookup m a) with
+  | Some n => n
   | None => 0
   end.
 
-Notation "h ?* k" := (strip_option_nat (h k)) (at level 80).
-
-Check t_empty.
-Check id_add.
+Notation "m '!?' a" := (strip_opt_nat m a) (at level 30). 
+ 
 
 Inductive aexp : Type :=
   | ANum : nat -> aexp
@@ -62,6 +58,8 @@ Inductive bexp : Type :=
   | BNot : bexp -> bexp
   | BAnd : bexp -> bexp -> bexp.
 
+
+
 (** ** Evaluation  *)
 Fixpoint aeval (h : heap) (v : valuation) (a : aexp) : nat :=
   match a with
@@ -69,8 +67,8 @@ Fixpoint aeval (h : heap) (v : valuation) (a : aexp) : nat :=
   | APlus a1 a2 => (aeval h v a1) + (aeval h v a2)
   | AMinus a1 a2  => (aeval h v a1) - (aeval h v a2)
   | AMult a1 a2 => (aeval h v a1) * (aeval h v a2)
-  | AVar x => v x
-  | ARead x => h ?* x 
+  | AVar x => v !? x
+  | ARead x => h !? x
   end.
 
 Fixpoint beval (h : heap) (v : valuation) (b : bexp) : bool :=
@@ -83,7 +81,7 @@ Fixpoint beval (h : heap) (v : valuation) (b : bexp) : bool :=
   | BAnd b1 b2  => andb (beval h v b1) (beval h v b2)
   end.
 
-Compute  aeval empty_heap (t_update empty_valuation A 5)
+Compute  aeval empty_heap (update empty_valuation A 5)
         (APlus (ANum 3) (AMult (AVar A) (ANum 2))).
 
 Compute aeval (update empty_heap A 5) empty_valuation
@@ -163,7 +161,7 @@ Inductive ceval : heap -> valuation -> com -> heap -> valuation -> Prop :=
       ceval h1 v1 (WHILE b DO c END) h3 v3 
   | E_Var  : forall (h : heap) (v : valuation) (a1 : aexp) (n : nat) (x : id),
       aeval h v a1 = n ->
-      ceval h v (x ::= a1) h (t_update v x n)
+      ceval h v (x ::= a1) h (update v x n)
   | E_Allocate : forall (h : heap) (v : valuation) (a : hid)  (n : nat),
       (forall (i : nat),  i < n -> h (id_add a i) = None) ->
       ceval h v ( a ::= Alloc n) (allocate h a n)  v
@@ -213,6 +211,7 @@ Definition pup_to_n : com :=
   END.
 
 (* Proof that this program executes as intended for [X] = [2] *)
+
 Theorem pup_to_2_ceval :
   ceval (update empty_heap A 2) empty_valuation
   pup_to_n  
