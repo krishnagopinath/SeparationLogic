@@ -1,4 +1,4 @@
-(** * Hoare: Hoare Logic, Part I *)
+(** * Hoare: Hoare Logic *)
 
 Require Import Coq.Bool.Bool.
 Require Import Coq.Arith.Arith.
@@ -73,12 +73,12 @@ Proof.
 
 Definition assn_sub X a P : Assertion :=
   fun (h : heap) (v : valuation) =>
-    P h (t_update v X (aeval h v a)).
+    P h (update v X (aeval h v a)).
 
 Notation "P [ X |-> a ]" := (assn_sub X a P) (at level 10).
 
 Theorem hoare_asgn : forall Q X a,
-  {{Q [X |-> a]}} (X ::= a) {{Q}}.
+  {{Q [X |-> a] }} (X ::= a) {{Q}}.
 Proof.
   unfold hoare_triple.
   intros.
@@ -260,7 +260,6 @@ Proof.
       split. assumption. apply bexp_eval_true. assumption.
 Qed.
 
-(* ================================================================= *)
 (** ** Memory write *)
 
 (**
@@ -271,7 +270,7 @@ Qed.
 
 Definition heap_sub x a P : Assertion :=
   fun (h : heap) (v : valuation) =>
-    P (t_update h x (aeval h v a)) v.
+    P (update h x (aeval h v a)) v.
 
 Notation "P '[*' x |-> a ]" := (heap_sub x a P) (at level 10).
 
@@ -283,9 +282,18 @@ Proof.
   inversion H. subst.
   unfold heap_sub in H0. apply H0.  Qed.
 
+(* ================================================================= *)
+(** ** Memory allocation *)
 
-(* ################################################################# *)
-(** ** Example Programs *)
+(**
+
+      ------------------------------ (hoare_heap_alloc)
+      {{h}} Alloc n {{h |-> 0(n) }}
+ *)
+
+
+
+(* swap two numbers *) 
 
 (**
       {{P}}
@@ -295,35 +303,34 @@ Proof.
 
 Module swap_proof.
 
-  Definition J : id := Id 0.
-  Definition K : id := Id 1.
-  Definition temp : id := Id 2.
+  Definition J : hid := Id 0.
+  Definition K : hid := Id 1.
+  Definition temp : hid := Id 2.
   
   Definition swap : com :=
     [*temp] ::= ARead J;;
     [*J] ::= ARead K;; 
     [*K] ::= ARead temp.
          
-  Theorem swap_ok : 
-    {{ fun h v => (h J = 5) /\ (h K = 7) }}
+  Theorem swap_works : forall a b,
+    {{ fun h v => (h !? J = a) /\ (h !? K = b) }}
       swap
-    {{ fun h v => (h J = 7) /\ (h K = 5) }}.
+    {{ fun h v => (h !? J = b) /\ (h !? K = a) }}.
   Proof.
-    unfold swap.
+    unfold swap. intros.
     eapply hoare_seq.
     - eapply hoare_seq.
-       * apply hoare_heap_write.
-       * apply hoare_heap_write.
+      * apply hoare_heap_write.
+      * unfold heap_sub. simpl. apply hoare_heap_write.
     - eapply hoare_consequence_pre.
       * apply hoare_heap_write.
-      * unfold heap_sub, t_update, assert_implies. intros.
-        simpl. destruct H. split.
-        apply H0.
-        apply H.
-   Qed.  
+      * intros h v [H0 H1]. split.
+        + assumption. 
+        + assumption.
+  Qed.  
 
 End swap_proof.
-  
+
 (** [] *)
 
 (** $Date: 2016-07-13 12:41:41 -0400 (Wed, 13 Jul 2016) $ *)
