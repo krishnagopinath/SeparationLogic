@@ -62,7 +62,6 @@ Proof.
 (* ################################################################# *)
 (** * Proof Rules *)
 
-(* ================================================================= *)
 (** ** Assignment *)
 
 (**
@@ -85,7 +84,6 @@ Proof.
   inversion H. subst.
   unfold assn_sub in H0. apply H0.  Qed.
 
-(* ================================================================= *)
 (** ** Consequence *)
 
 (** 
@@ -100,7 +98,6 @@ Proof.
                 {{P}} c {{Q}}
 *)
 
-(** Here are the formal versions: *)
 
 Theorem hoare_consequence_pre : forall (P P' Q : Assertion) c,
   {{P'}} c {{Q}} ->
@@ -143,7 +140,6 @@ Proof.
   apply hoare_consequence_post with (Q' := Q').
   assumption. assumption. assumption.  Qed.
 
-(* ================================================================= *)
 (** ** Skip *)
 
 (** Since [SKIP] doesn't change the state, it preserves any
@@ -159,7 +155,6 @@ Proof.
   unfold hoare_triple. intros. inversion H. subst.
   assumption.  Qed.
 
-(* ================================================================= *)
 (** ** Sequencing *)
 
 (** 
@@ -180,7 +175,6 @@ Proof.
   apply H0 with h v. assumption. assumption.
 Qed.
 
-(* ================================================================= *)
 (** ** Conditionals *)
 
 (** 
@@ -228,7 +222,6 @@ Proof.
       split. assumption.
              apply bexp_eval_false. assumption. Qed.
 
-(* ----------------------------------------------------------------- *)
 (** ** Loops *)
 
 (**
@@ -282,16 +275,8 @@ Proof.
   inversion H. subst.
   unfold heap_sub in H0. apply H0.  Qed.
 
-(* ================================================================= *)
-(** ** Memory allocation *)
-
-(**
-
-      ------------------------------ (hoare_heap_alloc)
-      {{h}} Alloc n {{h |-> 0(n) }}
- *)
-
-
+(* ################################################################# *)
+(** * Example Programs *)
 
 (* swap two numbers *) 
 

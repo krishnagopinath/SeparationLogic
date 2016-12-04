@@ -167,73 +167,41 @@ Inductive ceval : heap -> valuation -> com -> heap -> valuation -> Prop :=
       ceval h v ( a ::= Alloc n) (allocate h a n)  v
   | E_Free : forall (h : heap) (v : valuation) (a : hid) (n : nat),
       ceval h v (CFree a n)  (deallocate h a n) v
-  | E_Write : forall (h : heap) (v : valuation) (x : id) ( a1 : aexp) (n : nat),
-      aeval h v a1 = n ->
-      ceval h v ( [*x] ::= a1) (update h x n) v.
+  | E_Write : forall (h : heap) (v : valuation) (x : hid) ( a : aexp) (n v' : nat),
+      aeval h v a = n ->
+      lookup h x = Some v' ->
+      ceval h v ( [*x] ::= a) (update h x n) v.
 
 
 (* ################################################################# *)
 (** * Examples *)
 
-
+(* Assign a value to a variable *)
 Example ex_cwrite :  ceval empty_heap empty_valuation
-                           ( [*A] ::= (APlus (ANum 3) (ANum 12)))
-                           (update empty_heap A 15) empty_valuation.
+                           (A ::= (APlus (ANum 3) (ANum 12)))
+                           empty_heap (update empty_valuation  A 15).
 Proof.
-  simpl. apply E_Write; auto. Qed.
+  simpl. apply E_Var.  auto. Qed.
 
+
+(* Write to an allocated heap *)
 Example ex_complex :
   ceval
-    empty_heap empty_valuation
+    (allocate (allocate (allocate empty_heap A 1) B 1) C 1) empty_valuation
     ([*A] ::= ANum 2;;
      IFB BEq (ARead A) (ANum 2)
        THEN [*B] ::= ANum 3
        ELSE [*C] ::= ANum 4
      FI)     
-     (update (update empty_heap A 2) B 3) empty_valuation.
+    (update (update (allocate (allocate (allocate empty_heap A 1) B 1) C 1)  A 2) B 3)
+empty_valuation.
 Proof.
-  apply E_Seq with (update empty_heap A 2) empty_valuation.
-  - constructor; auto.
-  - repeat constructor; auto.
+  eapply E_Seq.
+  - eapply E_Write. reflexivity. reflexivity.  
+  - constructor. constructor. simpl. eapply E_Write. reflexivity. reflexivity. 
 Qed.
-
-(** pup_to_n  *)
-(** An Imp program that sums the numbers from [1] to
-   [X] (inclusive: [1 + 2 + ... + X]) in the variable [Y]. *)
-   
-Definition pup_to_n : com :=
-  [*B] ::= ANum 0;;  
-  WHILE (BNot (BEq (ANum 0) (ARead A))) DO
-  (
-    [*B] ::= APlus (ARead B) (ARead A);;
-    [*A] ::= AMinus (ARead A) (ANum 1)
-  )
-  END.
-
-(* Proof that this program executes as intended for [X] = [2] *)
-
-Theorem pup_to_2_ceval :
-  ceval (update empty_heap A 2) empty_valuation
-  pup_to_n  
-  (update (update (update (update (update (update empty_heap A 2) B 0) B 2) A 1) B 3) A 0) empty_valuation.
-Proof.
-  apply E_Seq with (h2 := (update (update empty_heap A 2) B 0) ) (v2 := empty_valuation).
-  - constructor; auto. 
-  - apply E_WhileLoop  with (h2 := (update (update (update (update empty_heap A 2) B 0) B 2) A 1))
-                           (v2 := empty_valuation).
-    + auto.
-    + apply E_Seq with (h2 := (update (update (update empty_heap A 2) B 0) B 2))
-                         (v2 := empty_valuation); apply E_Write; auto; constructor.
-    + apply E_WhileLoop with (h2 :=  (update (update (update (update (update (update empty_heap A 2) B 0) B 2) A 1) B 3) A 0)) (v2 := empty_valuation).
-      * auto.
-      * apply E_Seq with (h2 := (update (update (update (update (update empty_heap A 2) B 0) B 2) A 1) B 3)) (v2 := empty_valuation);
-        apply E_Write; auto; constructor.
-      * apply E_WhileEnd. auto.
-Qed.
-
 
 (* Allocate two items to the heap *)
- 
 Definition P := Id 15. 
 
 Definition alloc_2 : com :=
@@ -249,13 +217,12 @@ Proof.
   eapply E_Seq. apply E_Allocate.
   - intros. simpl. reflexivity.
   - eapply E_Seq.
-    + simpl. apply E_Write. reflexivity.
-    + simpl. apply E_Write. reflexivity.
+    + simpl. eapply E_Write. reflexivity. reflexivity.
+    + simpl. eapply E_Write. reflexivity. reflexivity.
 Qed.
 
 
 (* Allocate two items to the heap, then free one address location *)
-
 Definition alloc_2_free_1 : com :=
   P ::= Alloc 2;;
   CFree P 1.
