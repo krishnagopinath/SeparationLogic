@@ -125,15 +125,15 @@ Definition merge {A:Type} (m1 m2 : partial_map A) : partial_map A :=
              | v => v
              end.
 
-Definition split {A:Type} (m m1 m2 : partial_map A) : Prop :=
-  (* Using an Inductive defn was an overkill for this, I think *) 
-  m = merge m1 m2.
-
 Definition disjoint {A: Type} (m1 m2 : partial_map A) : Prop :=
   (* dom(m1) and dom(m2) = null. *) 
   (* If m1 and m2 give out values for the same Id, then the heaps are NOT disjoint *)
-  forall (a : id),  (m1 a <> None) /\ (m2 a <> None) -> False. 
+  forall (a : id),  (m1 a <> None) /\ (m2 a <> None) -> False.
 
+Notation "m1 '+++' m2" := (merge m1 m2) (at level 69).
+Notation "m1 '#' m2" := (disjoint m1 m2) (at level 79).
+
+                            
 Lemma apply_empty : forall A x, @empty A x = None.
 Proof. Admitted.
 
