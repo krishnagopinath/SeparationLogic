@@ -54,6 +54,7 @@ Lemma hoare_heap_write : forall (P : hid) (a : aexp),
   {{ ( *P |-> a)%sep }}.
 Proof.
   unfold hoare_triple.
-  intros P a h h' v v' H.  inversion H. subst. exists a.
+  intros. inversion H. subst. 
+  
   
   (* 27th November 2016 *)
