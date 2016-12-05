@@ -31,12 +31,12 @@ Definition star (P Q : Assertion) : Assertion :=
         (P h1 v) /\ (Q h2 v).
 
 (* Some notations that will keep us in line with the frap book *)
-Notation "'exists' x .. y , p" := (ex_assert (fun x => .. (ex_assert (fun y => p)) ..)) : sep_scope.
+Notation "'exists' x .. y , p" := (ex_assert (fun x => .. (ex_assert (fun y => p)) ..)) : separation_scope.
 Notation " '*' p '|->' v" := (ptoa p v) (at level 50) : sep_scope.
 Notation " P * Q " := (star P Q) : sep_scope.
 
-Delimit Scope sep_scope with sep.
-Local Open Scope sep_scope.
+Delimit Scope separation_scope with sep.
+Local Open Scope separation_scope.
 
 Check (exists v, ( *(Id 10) |-> v))%sep.
 
