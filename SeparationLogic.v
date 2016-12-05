@@ -5,6 +5,7 @@ Require Import Coq.omega.Omega.
 Require Import Imp.
 Require Import Maps.
 Require Import Hoare.
+Require Import Coq.Logic.FunctionalExtensionality.
 
 
 (* The formula emp accepts only the empty heap *)
@@ -12,9 +13,15 @@ Definition emp : Assertion :=
   fun (h : heap) (_: valuation) => h = empty_heap. 
 
 (* formula p -> a accepts only the heap whose only address is p, mapped to (aexp a) *)
-Definition ptoa (p : hid) (a : aexp) : Assertion :=
+Definition ptoa (p : hid) (a : nat) : Assertion :=
   fun (h : heap) (v : valuation) =>
-    h = (update empty_heap p (aeval h v a)).
+    h = (update empty_heap p  a).
+
+(* formula p -> a accepts only the heap whose only address is p, mapped to (aexp a) *)
+Print valuation.
+Definition ptoav (p : hid) (a : id) : Assertion :=
+  fun (h : heap) (v : valuation) =>
+    h = (update empty_heap p (v a)).
 
 (* Creating an existential quantifier that works for Assertions instead of Props.
  * Ripping off a lot of stuff from First-order quantifiers section of : 
@@ -38,7 +45,7 @@ Notation " P * Q " := (star P Q) : sep_scope.
 Delimit Scope separation_scope with sep.
 Local Open Scope separation_scope.
 
-Check (exists v, ( *(Id 10) |-> v))%sep.
+(*Check (exists v, ( * (Id 10) |-> v))%sep.*)
 
 (** ** Redoing Memory write *)
 
@@ -48,13 +55,18 @@ Check (exists v, ( *(Id 10) |-> v))%sep.
       {{[*p] |-> v }} [*p] ::= v' {{ [*p] |-> v' }}
  *)
 
-Lemma hoare_heap_write : forall (P : hid) (a : aexp),
-  {{ (exists v, *P |-> v)%sep }}
-    [*P] ::= a
-  {{ ( *P |-> a)%sep }}.
-Proof.
-  unfold hoare_triple.
-  intros. inversion H. subst. (* Stuck *)
-  
+Lemma hoare_heap_write_num : forall (P : hid) (a : nat),
+  {{ (exists v, ptoa P v)%sep }}
+    [*P] ::= ANum a
+  {{ ( ptoa P a)%sep }}.
+Admitted.
+
+Lemma hoare_heap_write_var : forall (P : hid) (i:id) ,
+  {{ (exists v, ptoa P v)%sep }}
+    [*P] ::= AVar i
+  {{ ( ptoav P i)%sep }}.
+Admitted.
+
+ 
   
   (* 27th November 2016 *)
