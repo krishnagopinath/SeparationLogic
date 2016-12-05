@@ -1,5 +1,5 @@
 (* TODO Some notational sugar for the map types (I mean, just look at the last proof) *)
-(* TODO Some notational sugar for id_add, CFree - looks ugly in programs *)
+(* TODO Some notational sugar for id_add - looks ugly in programs *)
 (* TODO For now, hid is just syntactic sugar over id, must find a better way to do this  *)
 (* TODO removing strip_to_nat leads to changing the entire Math operation libraries. Must think of another way to do this *)
 (* TODO Find a way to represent heap and valuation as one st object - Its getting tedious*)
@@ -18,11 +18,11 @@ Require Import Maps.
 (* ################################################################# *)
 (** * Arithmetic and Boolean Expressions *)
 
-Definition valuation := partial_map nat.
+Definition valuation := total_map nat.
 Definition heap := partial_map nat.
 
 Definition empty_valuation : valuation :=
-  empty.
+  t_empty 0.
 
 Definition empty_heap : heap :=
   empty.
@@ -67,7 +67,7 @@ Fixpoint aeval (h : heap) (v : valuation) (a : aexp) : nat :=
   | APlus a1 a2 => (aeval h v a1) + (aeval h v a2)
   | AMinus a1 a2  => (aeval h v a1) - (aeval h v a2)
   | AMult a1 a2 => (aeval h v a1) * (aeval h v a2)
-  | AVar x => v !? x
+  | AVar x => v x
   | ARead x => h !? x
   end.
 
@@ -81,7 +81,7 @@ Fixpoint beval (h : heap) (v : valuation) (b : bexp) : bool :=
   | BAnd b1 b2  => andb (beval h v b1) (beval h v b2)
   end.
 
-Compute  aeval empty_heap (update empty_valuation A 5)
+Compute  aeval empty_heap (t_update empty_valuation A 5)
         (APlus (ANum 3) (AMult (AVar A) (ANum 2))).
 
 Compute aeval (update empty_heap A 5) empty_valuation
@@ -117,7 +117,8 @@ Notation "x '::=' a" :=
   (CVar x a) (at level 60).
 Notation "a '::=' 'Alloc' n" :=
   (CAllocate a n) (at level 60).
-
+Notation "'Free' '(' a ',' n ')'" :=
+  (CFree a n) (left associativity, at level 40).
 
 (* ################################################################# *)
 (** * Evaluation *)
@@ -161,12 +162,12 @@ Inductive ceval : heap -> valuation -> com -> heap -> valuation -> Prop :=
       ceval h1 v1 (WHILE b DO c END) h3 v3 
   | E_Var  : forall (h : heap) (v : valuation) (a1 : aexp) (n : nat) (x : id),
       aeval h v a1 = n ->
-      ceval h v (x ::= a1) h (update v x n)
+      ceval h v (x ::= a1) h (t_update v x n)
   | E_Allocate : forall (h : heap) (v : valuation) (a : hid)  (n : nat),
       (forall (i : nat),  i < n -> h (id_add a i) = None) ->
       ceval h v ( a ::= Alloc n) (allocate h a n)  v
   | E_Free : forall (h : heap) (v : valuation) (a : hid) (n : nat),
-      ceval h v (CFree a n)  (deallocate h a n) v
+      ceval h v (Free (a ,n))  (deallocate h a n) v
   | E_Write : forall (h : heap) (v : valuation) (x : hid) ( a : aexp) (n v' : nat),
       aeval h v a = n ->
       lookup h x = Some v' ->
@@ -179,7 +180,7 @@ Inductive ceval : heap -> valuation -> com -> heap -> valuation -> Prop :=
 (* Assign a value to a variable *)
 Example ex_cwrite :  ceval empty_heap empty_valuation
                            (A ::= (APlus (ANum 3) (ANum 12)))
-                           empty_heap (update empty_valuation  A 15).
+                           empty_heap (t_update empty_valuation  A 15).
 Proof.
   simpl. apply E_Var.  auto. Qed.
 
@@ -225,7 +226,7 @@ Qed.
 (* Allocate two items to the heap, then free one address location *)
 Definition alloc_2_free_1 : com :=
   P ::= Alloc 2;;
-  CFree P 1.
+  Free (P, 1).
 
 Theorem alloc_2_free_1_ceval :
   ceval empty_heap empty_valuation

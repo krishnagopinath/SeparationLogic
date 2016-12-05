@@ -72,7 +72,7 @@ Proof.
 
 Definition assn_sub X a P : Assertion :=
   fun (h : heap) (v : valuation) =>
-    P h (update v X (aeval h v a)).
+    P h (t_update v X (aeval h v a)).
 
 Notation "P [ X |-> a ]" := (assn_sub X a P) (at level 10).
 
