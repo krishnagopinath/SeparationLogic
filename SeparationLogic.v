@@ -54,20 +54,32 @@ Local Open Scope separation_scope.
       {{[*p] |-> v }} [*p] ::= v' {{ [*p] |-> v' }}
  *)
 
-Lemma hoare_heap_write_num : forall (P : hid) (v' : nat),
-  {{ (exists v,  ptoa P v)%sep }}
-    [*P] ::= ANum v'
-  {{ ( ptoa P v') }}.
+(*
+ E_Write : forall (h : heap) (v : valuation) (x : hid) ( a : aexp) (n v' : nat),
+      aeval h v a = n ->
+      h x = Some v' ->
+      ceval h v ( [*x] ::= a) (update h x n) v.
+
+*)
+
+Lemma hoare_heap_write_num : forall (P : hid) (a' : nat),
+  {{ (exists a,  ptoa P a)%sep }}
+    [*P] ::= ANum a'
+  {{ ( ptoa P a') }}.
 Proof.
   unfold hoare_triple. intros.
-  inversion H. subst. simpl. simpl in H. 
+  inversion H. subst. simpl.
+  destruct H0. unfold ptoa. unfold ptoa in H0. rewrite H0. apply update_shadow.
+Qed.
   
 Lemma hoare_heap_write_var : forall (P : hid) (i:id) ,
   {{ (exists v, ptoa P v)%sep }}
     [*P] ::= AVar i
   {{ (ptoav P i) }}.
-Admitted.
-
- 
+Proof.
+  unfold hoare_triple. intros.
+  inversion H. subst. simpl.
+  destruct H0. unfold ptoav. unfold ptoa in H0. rewrite H0. apply update_shadow.
+Qed.
   
   (* 27th November 2016 *)
