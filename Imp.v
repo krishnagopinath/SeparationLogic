@@ -167,10 +167,10 @@ Inductive ceval : heap -> valuation -> com -> heap -> valuation -> Prop :=
       (forall (i : nat),  i < n -> h (id_add a i) = None) ->
       ceval h v ( a ::= Alloc n) (allocate h a n)  v
   | E_Free : forall (h : heap) (v : valuation) (a : hid) (n : nat),
-      ceval h v (Free (a ,n))  (deallocate h a n) v
+      ceval h v (Free (a,n))  (deallocate h a n) v
   | E_Write : forall (h : heap) (v : valuation) (x : hid) ( a : aexp) (n v' : nat),
       aeval h v a = n ->
-      lookup h x = Some v' ->
+      h x = Some v' ->
       ceval h v ( [*x] ::= a) (update h x n) v.
 
 
@@ -198,7 +198,7 @@ Example ex_complex :
 empty_valuation.
 Proof.
   eapply E_Seq.
-  - eapply E_Write. reflexivity. reflexivity.  
+  - eapply E_Write. reflexivity.  reflexivity. 
   - constructor. constructor. simpl. eapply E_Write. reflexivity. reflexivity. 
 Qed.
 

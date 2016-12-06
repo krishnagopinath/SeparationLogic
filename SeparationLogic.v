@@ -12,10 +12,10 @@ Require Import Coq.Logic.FunctionalExtensionality.
 Definition emp : Assertion :=
   fun (h : heap) (_: valuation) => h = empty_heap. 
 
-(* formula p -> a accepts only the heap whose only address is p, mapped to (aexp a) *)
+(* formula p -> a accepts only the heap whose only address is p, mapped to (nat a) *)
 Definition ptoa (p : hid) (a : nat) : Assertion :=
   fun (h : heap) (v : valuation) =>
-    h = (update empty_heap p  a).
+    h = (update empty_heap p a).
 
 (* formula p -> a accepts only the heap whose only address is p, mapped to (aexp a) *)
 Print valuation.
@@ -39,7 +39,6 @@ Definition star (P Q : Assertion) : Assertion :=
 
 (* Some notations that will keep us in line with the frap book *)
 Notation "'exists' x .. y , p" := (ex_assert (fun x => .. (ex_assert (fun y => p)) ..)) : separation_scope.
-Notation " '*' p '|->' v" := (ptoa p v) (at level 50) : sep_scope.
 Notation " P * Q " := (star P Q) : sep_scope.
 
 Delimit Scope separation_scope with sep.
@@ -56,15 +55,15 @@ Local Open Scope separation_scope.
  *)
 
 Lemma hoare_heap_write_num : forall (P : hid) (a : nat),
-  {{ (exists v, ptoa P v)%sep }}
+  {{ (exists v,  ptoa P v) }}
     [*P] ::= ANum a
-  {{ ( ptoa P a)%sep }}.
+  {{ ( ptoa P a) }}.
 Admitted.
 
 Lemma hoare_heap_write_var : forall (P : hid) (i:id) ,
-  {{ (exists v, ptoa P v)%sep }}
+  {{ (exists v, ptoa P v) }}
     [*P] ::= AVar i
-  {{ ( ptoav P i)%sep }}.
+  {{ (ptoav P i) }}.
 Admitted.
 
  
