@@ -17,7 +17,7 @@ Definition ptoa (p : hid) (a : nat) : Assertion :=
   fun (h : heap) (v : valuation) =>
     h = (update empty_heap p a).
 
-(* formula p -> a accepts only the heap whose only address is p, mapped to (aexp a) *)
+(* formula p -> a accepts only the heap whose only address is p, mapped to (id a) *)
 Print valuation.
 Definition ptoav (p : hid) (a : id) : Assertion :=
   fun (h : heap) (v : valuation) =>
@@ -54,14 +54,16 @@ Local Open Scope separation_scope.
       {{[*p] |-> v }} [*p] ::= v' {{ [*p] |-> v' }}
  *)
 
-Lemma hoare_heap_write_num : forall (P : hid) (a : nat),
-  {{ (exists v,  ptoa P v) }}
-    [*P] ::= ANum a
-  {{ ( ptoa P a) }}.
-Admitted.
-
+Lemma hoare_heap_write_num : forall (P : hid) (v' : nat),
+  {{ (exists v,  ptoa P v)%sep }}
+    [*P] ::= ANum v'
+  {{ ( ptoa P v') }}.
+Proof.
+  unfold hoare_triple. intros.
+  inversion H. subst. simpl. simpl in H. 
+  
 Lemma hoare_heap_write_var : forall (P : hid) (i:id) ,
-  {{ (exists v, ptoa P v) }}
+  {{ (exists v, ptoa P v)%sep }}
     [*P] ::= AVar i
   {{ (ptoav P i) }}.
 Admitted.
