@@ -105,6 +105,9 @@ Proof.
   unfold hoare_triple.
   intros.
   inversion H. subst.
+  (* This probably doesnt work, because the mptoa Fixpoint's recursion is defined with n, 
+   * thereby setting up an infinite loop of mptoa(s) 
+   *)
   destruct n.
   + simpl. apply H0.
   + simpl. unfold star. split.
