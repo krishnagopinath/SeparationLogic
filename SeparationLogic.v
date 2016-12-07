@@ -18,7 +18,6 @@ Definition ptoa (p : hid) (a : nat) : Assertion :=
     h = (update empty_heap p a).
 
 (* formula p -> a accepts only the heap whose only address is p, mapped to (id a) *)
-Print valuation.
 Definition ptoav (p : hid) (a : id) : Assertion :=
   fun (h : heap) (v : valuation) =>
     h = (update empty_heap p (v a)).
@@ -39,7 +38,6 @@ Definition star (P Q : Assertion) : Assertion :=
 
 (* Some notations that will keep us in line with the frap book *)
 Notation "'exists' x .. y , p" := (ex_assert (fun x => .. (ex_assert (fun y => p)) ..)) : separation_scope.
-Notation " P * Q " := (star P Q) : sep_scope.
 
 Delimit Scope separation_scope with sep.
 Local Open Scope separation_scope.
@@ -54,32 +52,61 @@ Local Open Scope separation_scope.
       {{[*p] |-> v }} [*p] ::= v' {{ [*p] |-> v' }}
  *)
 
-(*
- E_Write : forall (h : heap) (v : valuation) (x : hid) ( a : aexp) (n v' : nat),
-      aeval h v a = n ->
-      h x = Some v' ->
-      ceval h v ( [*x] ::= a) (update h x n) v.
-
-*)
-
-Lemma hoare_heap_write_num : forall (P : hid) (a' : nat),
-  {{ (exists a,  ptoa P a)%sep }}
-    [*P] ::= ANum a'
-  {{ ( ptoa P a') }}.
+Lemma hoare_heap_write_num : forall (p : hid) (a' : nat),
+  {{ (exists a,  ptoa p a)%sep }}
+    [*p] ::= ANum a'
+  {{ ( ptoa p a') }}.
 Proof.
   unfold hoare_triple. intros.
   inversion H. subst. simpl.
   destruct H0. unfold ptoa. unfold ptoa in H0. rewrite H0. apply update_shadow.
 Qed.
   
-Lemma hoare_heap_write_var : forall (P : hid) (i:id) ,
-  {{ (exists v, ptoa P v)%sep }}
-    [*P] ::= AVar i
-  {{ (ptoav P i) }}.
+Lemma hoare_heap_write_var : forall (p : hid) (i:id) ,
+  {{ (exists v, ptoa p v)%sep }}
+    [*p] ::= AVar i
+  {{ (ptoav p i) }}.
 Proof.
   unfold hoare_triple. intros.
   inversion H. subst. simpl.
   destruct H0. unfold ptoav. unfold ptoa in H0. rewrite H0. apply update_shadow.
 Qed.
-  
+
+
+(** ** Heap Memory Allocation *)
+
+(**
+
+      ------------------------------ (hoare_heap_alloc)
+      {{emp}} (a ::= Alloc n) {{ 0^n  }}
+ *)
+
+Check ptoa (Id 1) 0.
+
+Fixpoint mptoa (a : hid) (n : nat) : Assertion :=
+  match n with
+  | 0 => emp
+  | S n' => star (ptoa a 0) (mptoa (id_add a 1) n') 
+  end. 
+
+
+(* 
+ E_Allocate : forall (h : heap) (v : valuation) (a : hid)  (n : nat),
+      (forall (i : nat),  i < n -> h (id_add a i) = None) ->
+      ceval h v ( a ::= Alloc n) (allocate h a n)  v
+
+ *)
+
+Lemma hoare_heap_alloc : forall (p : hid) (n :nat),
+  {{emp}}
+   p ::= Alloc n 
+  {{mptoa p n}}.
+Proof.
+  unfold hoare_triple.
+  intros.
+  inversion H. subst.
+  destruct n.
+  + simpl. apply H0.
+  + simpl. unfold star. split.
+   
   (* 27th November 2016 *)

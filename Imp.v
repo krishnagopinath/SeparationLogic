@@ -203,6 +203,8 @@ Proof.
 Qed.
 
 (* Allocate two items to the heap *)
+Module alloc_2_mod.
+  
 Definition P := Id 15. 
 
 Definition alloc_2 : com :=
@@ -222,6 +224,12 @@ Proof.
     + simpl. eapply E_Write. reflexivity. reflexivity.
 Qed.
 
+End alloc_2_mod.
+
+Module alloc_2_free_1_mod.
+
+Definition P := Id 15.   
+  
 
 (* Allocate two items to the heap, then free one address location *)
 Definition alloc_2_free_1 : com :=
@@ -238,6 +246,7 @@ Proof.
   - simpl. apply E_Free.
 Qed.
 
+End alloc_2_free_1_mod.
     
 (** [] *)
 
