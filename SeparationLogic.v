@@ -103,13 +103,10 @@ Lemma hoare_heap_alloc : forall (p : hid) (n :nat),
   {{mptoa p n}}.
 Proof.
   unfold hoare_triple.
-  intros.
-  inversion H. subst.
-  (* This probably doesnt work, because the mptoa Fixpoint's recursion is defined with n, 
-   * thereby setting up an infinite loop of mptoa(s) 
-   *)
-  destruct n.
-  + simpl. apply H0.
-  + simpl. unfold star. split.
-   
+  intros p n h h' v v' H HEmp.
+  inversion H. subst. rewrite HEmp.
+  induction n as [ | n' IHn' ]. 
+  + simpl. reflexivity.
+  + 
+    
   (* 27th November 2016 *)
