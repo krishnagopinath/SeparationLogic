@@ -107,6 +107,39 @@ Proof.
   inversion H. subst. rewrite HEmp.
   induction n as [ | n' IHn' ]. 
   + simpl. reflexivity.
-  + 
+  + simpl. unfold star.
+    exists (update (empty_heap) p 0).   
+    exists (allocate empty_heap (id_add p 1) n').
+      
+    (* find out what h1 and h2 are *)
+    (* apply IHn' *)
+
+Admitted.
+
+(* Heap memory free *)
+
+(* Check if all the pointers in memory region point to SOME value  *)
+Fixpoint allocated (p : hid) (n : nat)  : Assertion :=
+  match n with
+  | 0 => emp
+  | S n' => star (exists (v : nat), ptoa p v)%sep  (allocated (id_add p 1) n')
+  end.
+  
+Lemma hoare_heap_free : forall (p : hid) (n : nat),
+  {{ allocated p n }}
+    Free (p, n)
+  {{ emp }}.
+Proof.
+  unfold hoare_triple.
+  intros p n h h' v v' HEval HAlloc.
+  inversion HEval. subst.
+  unfold emp.
+  induction n as [ | n' IHn'].
+  - simpl. simpl in HAlloc. unfold emp in HAlloc. assumption.
+  - simpl. simpl in HAlloc. unfold star in HAlloc.
+    destruct HAlloc as [ h1 [h2 [HMerge [HDisjoint [HPtoa HAllocated]]]] ].
     
+  
+    
+     
   (* 27th November 2016 *)
