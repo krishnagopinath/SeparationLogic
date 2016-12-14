@@ -128,7 +128,7 @@ Definition merge {A:Type} (m1 m2 : partial_map A) : partial_map A :=
 Definition disjoint {A: Type} (m1 m2 : partial_map A) : Prop :=
   (* dom(m1) and dom(m2) = null. *) 
   (* If m1 and m2 give out values for the same Id, then the heaps are NOT disjoint *)
-  forall (a : id),  (exists v, m1 a = Some v) /\ (exists u, m2 a = Some u) -> False.
+  forall (a : id),  (m1 a <> None) /\ (m2 a <> None) -> False.
 
                             
 Lemma apply_empty : forall A x, @empty A x = None.
@@ -165,6 +165,5 @@ Proof.
   intros X v1 v2 x1 x2 m. unfold update.
   apply t_update_permute.
 Qed.
-
 
 

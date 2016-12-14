@@ -97,6 +97,13 @@ Fixpoint mptoa (a : hid) (n : nat) : Assertion :=
 
  *)
 
+Lemma merge_allocate : forall m1 m2 a n,
+  merge m1 (allocate m2 a n) = allocate (merge m1 m2) a n.
+Proof.
+  intros.
+  induction n.
+  - simpl. reflexivity.
+  - Admitted.
 
 
 Lemma hoare_heap_alloc : forall (p : hid) (n :nat),
@@ -108,13 +115,21 @@ Proof.
   intros p n h h' v v' H HEmp.
   inversion H. subst. rewrite HEmp.
   induction n as [ | n' IHn' ]. 
-  + simpl. reflexivity.
-  + simpl. unfold star.
+  { simpl. reflexivity. }
+  { simpl. unfold star.
     exists (update (empty_heap) p 0), (allocate empty_heap (id_add p 1) n'). 
-    split.
-    * simpl. unfold merge. apply functional_extensionality. intros.
-      destruct (allocate empty_heap (id_add p 1) n' x).
-  - destruct ( allocate (update empty_heap p 0) (id_add p 1) n' x).
+    split. 
+     { simpl. rewrite merge_allocate. reflexivity. }
+   split.
+     { unfold disjoint. intros a [Hh1 Hh2].
+       destruct Hh1. 
+       rewrite update_neq.
+       - reflexivity.
+       - Admitted.
+         
+       
+    
+    
     
 
       
@@ -123,8 +138,6 @@ Proof.
       
     (* find out what h1 and h2 are *)
     (* apply IHn' *)
-
-Admitted.
 
 (* Heap memory free *)
 
