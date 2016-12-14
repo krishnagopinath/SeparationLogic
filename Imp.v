@@ -133,10 +133,8 @@ Fixpoint allocate (h : heap) (a : hid) (n : nat) : heap :=
 Compute allocate empty_heap (Id 0) (3).
 Compute allocate (update empty_heap (Id 0) 0) (id_add (Id 0) 1) 2.
 
-
-
-Compute allocate (update empty_heap (Id 0) 0) (id_add (Id 0) 1) 2 =
-  update empty_heap (Id 0) 0 +++ allocate empty_heap (id_add (Id 0) 1) 2.
+Compute ((allocate (update empty_heap (Id 0) 0)) (Id 1) 1) (Id 1) =
+  (merge (update empty_heap (Id 0) 0)  (update empty_heap (Id 1) 0)) (Id 1).
 
 
 (* A helper fn that removes items from the heap *)

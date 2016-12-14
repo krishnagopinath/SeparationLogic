@@ -130,9 +130,6 @@ Definition disjoint {A: Type} (m1 m2 : partial_map A) : Prop :=
   (* If m1 and m2 give out values for the same Id, then the heaps are NOT disjoint *)
   forall (a : id),  (exists v, m1 a = Some v) /\ (exists u, m2 a = Some u) -> False.
 
-Notation "m1 '+++' m2" := (merge m1 m2) (at level 69).
-Notation "m1 '#' m2" := (disjoint m1 m2) (at level 79).
-
                             
 Lemma apply_empty : forall A x, @empty A x = None.
 Proof. Admitted.

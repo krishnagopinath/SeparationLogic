@@ -33,7 +33,7 @@ Definition star (P Q : Assertion) : Assertion :=
   fun (h : heap) (v : valuation) =>
     exists h1, exists h2,
         (* heap can be split into pieces /\ the split pieces are disjoint *) 
-        (h = h1 +++ h2) /\  h1 # h2 /\
+        (h = merge h1 h2) /\  (disjoint h1 h2) /\
         (P h1 v) /\ (Q h2 v).
 
 (* Some notations that will keep us in line with the frap book *)
@@ -113,7 +113,11 @@ Proof.
     exists (update (empty_heap) p 0), (allocate empty_heap (id_add p 1) n'). 
     split.
     * simpl. unfold merge. apply functional_extensionality. intros.
-      destruct (update empty_heap p 0).
+      destruct (allocate empty_heap (id_add p 1) n' x).
+  - destruct ( allocate (update empty_heap p 0) (id_add p 1) n' x).
+    
+
+      
     
       
       
@@ -125,6 +129,7 @@ Admitted.
 (* Heap memory free *)
 
 (* Check if all the pointers in memory region point to SOME value  *)
+(*
 Fixpoint allocated (p : hid) (n : nat)  : Assertion :=
   match n with
   | 0 => emp
@@ -145,7 +150,7 @@ Proof.
   - simpl. simpl in HAlloc. unfold star in HAlloc.
     destruct HAlloc as [ h1 [h2 [HMerge [HDisjoint [HPtoa HAllocated]]]] ].
     
-  
+*)  
     
      
   (* 27th November 2016 *)
