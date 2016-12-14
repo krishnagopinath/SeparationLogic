@@ -86,7 +86,7 @@ Check ptoa (Id 1) 0.
 Fixpoint mptoa (a : hid) (n : nat) : Assertion :=
   match n with
   | 0 => emp
-  | S n' => star (ptoa a 0) (mptoa (id_add a 1) n') 
+  | S n' => star (ptoa (id_add a n')  0) (mptoa a n') 
   end. 
 
 
@@ -96,6 +96,8 @@ Fixpoint mptoa (a : hid) (n : nat) : Assertion :=
       ceval h v ( a ::= Alloc n) (allocate h a n)  v
 
  *)
+
+
 
 Lemma hoare_heap_alloc : forall (p : hid) (n :nat),
   {{emp}}
@@ -108,8 +110,12 @@ Proof.
   induction n as [ | n' IHn' ]. 
   + simpl. reflexivity.
   + simpl. unfold star.
-    exists (update (empty_heap) p 0).   
-    exists (allocate empty_heap (id_add p 1) n').
+    exists (update (empty_heap) p 0), (allocate empty_heap (id_add p 1) n'). 
+    split.
+    * simpl. unfold merge. apply functional_extensionality. intros.
+      destruct (update empty_heap p 0).
+    
+      
       
     (* find out what h1 and h2 are *)
     (* apply IHn' *)
@@ -122,7 +128,7 @@ Admitted.
 Fixpoint allocated (p : hid) (n : nat)  : Assertion :=
   match n with
   | 0 => emp
-  | S n' => star (exists (v : nat), ptoa p v)%sep  (allocated (id_add p 1) n')
+  | S n' => star (exists (v : nat), ptoa (id_add p  v)%sep  (allocated (id_add p 1) n')
   end.
   
 Lemma hoare_heap_free : forall (p : hid) (n : nat),

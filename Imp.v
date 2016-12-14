@@ -127,8 +127,17 @@ Notation "'Free' '(' a ',' n ')'" :=
 Fixpoint allocate (h : heap) (a : hid) (n : nat) : heap :=
   match n with
   | 0 => h
-  | S n' => update (allocate h a n') (id_add a n') 0
+  | S n' => allocate (update h a 0) (id_add a 1) n'
   end.
+
+Compute allocate empty_heap (Id 0) (3).
+Compute allocate (update empty_heap (Id 0) 0) (id_add (Id 0) 1) 2.
+
+
+
+Compute allocate (update empty_heap (Id 0) 0) (id_add (Id 0) 1) 2 =
+  update empty_heap (Id 0) 0 +++ allocate empty_heap (id_add (Id 0) 1) 2.
+
 
 (* A helper fn that removes items from the heap *)
 Fixpoint deallocate (h: heap) (a : hid) (n : nat) : heap :=
@@ -136,6 +145,8 @@ Fixpoint deallocate (h: heap) (a : hid) (n : nat) : heap :=
   | 0 => h
   | S n' => deallocate (remove h a) (id_add a 1) n'
   end.
+
+Compute deallocate (allocate empty_heap (Id 0) (3)) (Id 0) (3).
 
 Inductive ceval : heap -> valuation -> com -> heap -> valuation -> Prop :=
   | E_Skip : forall (h : heap) (v : valuation),

@@ -120,15 +120,15 @@ Definition remove {A:Type} (m : partial_map A) (key : id) : partial_map A :=
   fun key' => if beq_id key key' then None else m key'.
 
 Definition merge {A:Type} (m1 m2 : partial_map A) : partial_map A :=
-  fun key => match (m1 key) with
-             | None => m2 key
+  fun key => match (m2 key) with
+             | None => m1 key
              | v => v
              end.
 
 Definition disjoint {A: Type} (m1 m2 : partial_map A) : Prop :=
   (* dom(m1) and dom(m2) = null. *) 
   (* If m1 and m2 give out values for the same Id, then the heaps are NOT disjoint *)
-  forall (a : id),  (m1 a <> None) /\ (m2 a <> None) -> False.
+  forall (a : id),  (exists v, m1 a = Some v) /\ (exists u, m2 a = Some u) -> False.
 
 Notation "m1 '+++' m2" := (merge m1 m2) (at level 69).
 Notation "m1 '#' m2" := (disjoint m1 m2) (at level 79).
@@ -168,5 +168,6 @@ Proof.
   intros X v1 v2 x1 x2 m. unfold update.
   apply t_update_permute.
 Qed.
+
 
 
